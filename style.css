@@ -5,3 +5,7 @@ body {
 .formly-field {
     margin-bottom:16px;
 }
+
+.some-message{
+    color: #a94442;
+}

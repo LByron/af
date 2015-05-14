@@ -5,19 +5,13 @@
 
 
 
-    var app = angular.module('formlyExample', ['formly', 'formlyBootstrap']);
+    var app = angular.module('formlyExample', ['formly', 'formlyBootstrap', 'ngAria','ngMessages']);
 
 
     app.constant('formlyExampleApiCheck', apiCheck());
 
 
     app.config(function config(formlyConfigProvider, formlyExampleApiCheck) {
-
-        // set templates here
-        formlyConfigProvider.setType({
-            name: 'custom',
-            templateUrl: 'custom.html'
-        });
 
 
         // set templates here
@@ -74,6 +68,43 @@
                 }
             }
         });
+
+
+
+    });
+
+
+    app.run(function(formlyConfig,formlyValidationMessages){
+
+
+
+
+        formlyConfig.setWrapper({
+            name: 'validation',
+            types: ['input', 'customInput'],
+            templateUrl: 'my-messages.html'
+        });
+
+
+        formlyConfig.setType({
+            name: 'customInput',
+            extends: 'input',
+            controller: ['$scope', function($scope) {
+                $scope.options.data.getValidationMessage = getValidationMessage;
+
+                function getValidationMessage(key) {
+                    var message = $scope.options.validation.messages[key];
+                    if (message) {
+                        return message($scope.fc.$viewValue, $scope.fc.$modelValue, $scope);
+                    }
+                }
+            }]
+        });
+
+        formlyValidationMessages.addTemplateOptionValueMessage('maxlength', 'maxlength', '', 'is the maximum length', 'Too long');
+        formlyValidationMessages.addTemplateOptionValueMessage('minlength', 'minlength', '', 'is the minimum length', 'Too short');
+        formlyValidationMessages.messages.required = 'to.label + " is required"';
+        formlyValidationMessages.messages.email = '$viewValue + " is not a valid email address"';
     });
 
 
@@ -83,10 +114,6 @@
         vm.onSubmit = onSubmit;
 
         // variable assignment
-        vm.env = {
-            angularVersion: angular.version.full,
-            formlyVersion: formlyVersion
-        };
 
         vm.model = {
             awesome: true
@@ -100,15 +127,15 @@
                 type: 'input',
                 templateOptions: {
                     label: 'Text',
-                    placeholder: 'Formly is terrific!'
+                    placeholder: 'This is a text input'
                 }
             },
             {
                 key: 'story',
                 type: 'textarea',
                 templateOptions: {
-                    label: 'Some sweet story',
-                    placeholder: 'It allows you to build and maintain your forms with the ease of JavaScript :-)'
+                    label: 'Some more text',
+                    placeholder: 'This is a textarea'
                 }
             },
             {
@@ -155,17 +182,31 @@
                 }
             },
             {
-                key: 'custom',
-                type: 'custom',
-                templateOptions: {
-                    label: 'Custom inlined',
-                }
-            },
-            {
                 key: 'exampleDirective',
                 template: '<div example-directive></div>',
                 templateOptions: {
                     label: 'Example Directive'
+                }
+            },
+            {
+                key: "color",
+                type: "radio",
+                templateOptions: {
+                    label: "Color Preference (try this out)",
+                    options: [
+                        {
+                            "name": "No Preference",
+                            "value": null
+                        },
+                        {
+                            "name": "Green",
+                            "value": "green"
+                        },
+                        {
+                            "name": "Blue",
+                            "value": "blue"
+                        }
+                    ]
                 }
             },
             {
@@ -194,11 +235,35 @@
                     fieldToMatch: 'password',
                     modelToMatch: vm.model
                 }
+            },
+            {
+                key: 'ip',
+                type: 'customInput',
+                validators: {
+                    ipAddress: {
+                        expression: function(viewValue, modelValue) {
+                            var value = modelValue || viewValue;
+                            return /(\d{1,3}\.){3}\d{1,3}/.test(value);
+                        },
+                        message: '$viewValue + " is not a valid IP Address"'
+                    }
+                },
+                templateOptions: {
+                    label: 'IP Address',
+                    required: true,
+                    type: 'text',
+                    placeholder: '127.0.0.1'
+                }
             }
         ];
 
         // function definition
         function onSubmit() {
+
+            vm.formFields.forEach(function(field){
+                field.validation.show = true;
+            });
+
             alert(JSON.stringify(vm.model), null, 2);
         }
     });
